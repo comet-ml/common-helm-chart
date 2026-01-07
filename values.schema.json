@@ -1,0 +1,125 @@
+{
+	"$schema": "https://json-schema.org/draft-07/schema#",
+	"$id": "./values.schema.json",
+	"title": "Helm Chart Values",
+	"type": "object",
+	"properties": {
+		"global": {
+			"type": "object",
+			"properties": {
+				"deploymentSizePreset": {
+					"type": "string"
+				},
+				"sizePresets": {
+					"type": "object",
+					"patternProperties": {
+						".+": {
+							"type": "object",
+							"patternProperties": {
+								".+": {
+									"type": "object",
+									"properties": {
+										"replicaCount": {
+											"type": "integer",
+											"minimum": 0
+										},
+										"resources": {
+											"type": "object",
+											"properties": {
+												"limits": {
+													"type": "object",
+													"properties": {
+														"memory": {
+															"$ref": "#/$defs/dataSize"
+														},
+														"cpu": {
+															"$ref": "#/$defs/k8sCPUUnits"
+														}
+													}
+												},
+												"requests": {
+													"$ref": "#/properties/global/properties/sizePresets/patternProperties/.+/patternProperties/.+/properties/resources/properties/limits"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"cometComponents": {
+					"type": "object",
+					"properties": {
+						"frontend": {
+							"type": "object",
+							"properties": {
+								"enabled": {
+									"type": "boolean"
+								},
+								"version": {
+									"type": "string"
+								}
+							}
+						},
+						"backendReact": {
+							"$ref": "#/properties/global/properties/cometComponents/properties/frontend"
+						},
+						"backendPython": {
+							"$ref": "#/properties/global/properties/cometComponents/properties/frontend"
+						},
+						"backendPostprocess": {
+							"$ref": "#/properties/global/properties/cometComponents/properties/frontend"
+						},
+						"backendOptimizer": {
+							"$ref": "#/properties/global/properties/cometComponents/properties/frontend"
+						},
+						"backendMPM": {
+							"$ref": "#/properties/global/properties/cometComponents/properties/frontend"
+						},
+						"codePanels": {
+							"$ref": "#/properties/global/properties/cometComponents/properties/frontend"
+						},
+						"opik": {
+							"$ref": "#/properties/global/properties/cometComponents/properties/frontend"
+						}
+					}
+				},
+				"internalDataLayers": {
+					"type": "object",
+					"properties": {
+						"mysql": {
+							"type": "boolean"
+						},
+						"redis": {
+							"type": "boolean"
+						},
+						"s3": {
+							"type": "boolean"
+						}
+					}
+				},
+				"cometImages": {
+					"type": "object",
+					"properties": {
+						"registry": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	},
+	"$defs": {
+		"dataSize": {
+			"title": "Data Size",
+			"type": "string",
+			"pattern": "\\d+(b|B|K|Ki|M|Mi|G|Gi|T|Ti|P|Pi)"
+		},
+		"k8sCPUUnits": {
+			"title": "Kubernetes CPU Units",
+			"type": "string",
+			"pattern": "^(\\d+(\\.\\d+)?|\\d+m)$"
+		}
+	}
+}
