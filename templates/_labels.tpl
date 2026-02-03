@@ -60,6 +60,6 @@ or
   {{- else -}}
 app.kubernetes.io/name: {{ include "comet-common.names.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-  {{- end -}}
+  {{- end }}
 {{ include "comet-common.labels.component" . }}
 {{- end }}
