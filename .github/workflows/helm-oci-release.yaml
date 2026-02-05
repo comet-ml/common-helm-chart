@@ -1,0 +1,182 @@
+name: Helm OCI Chart Release
+
+on:
+  workflow_call:
+    inputs:
+      oci_registry:
+        description: 'OCI registry URL (e.g., ghcr.io/comet-ml)'
+        required: true
+        type: string
+      chart_path:
+        description: 'Path to the chart directory (default: repository root)'
+        required: false
+        type: string
+        default: '.'
+      mark_as_latest:
+        description: 'Mark the GitHub release as latest'
+        required: false
+        type: boolean
+        default: true
+      skip_existing:
+        description: 'Skip release if tag already exists'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      oci_password:
+        description: 'Password for OCI registry authentication'
+        required: true
+    outputs:
+      chart_name:
+        description: 'The name of the released chart'
+        value: ${{ jobs.release.outputs.chart_name }}
+      chart_version:
+        description: 'The version of the released chart'
+        value: ${{ jobs.release.outputs.chart_version }}
+      released:
+        description: 'Whether a release was created'
+        value: ${{ jobs.release.outputs.released }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      chart_name: ${{ steps.chart_info.outputs.name }}
+      chart_version: ${{ steps.chart_info.outputs.version }}
+      released: ${{ steps.release.outputs.released }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract chart info
+        id: chart_info
+        working-directory: ${{ inputs.chart_path }}
+        run: |
+          if [[ ! -f "Chart.yaml" ]]; then
+            echo "::error::Chart.yaml not found in ${{ inputs.chart_path }}"
+            exit 1
+          fi
+
+          name=$(yq '.name' Chart.yaml)
+          version=$(yq '.version' Chart.yaml)
+          description=$(yq '.description' Chart.yaml)
+
+          echo "name=$name" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "description=$description" >> $GITHUB_OUTPUT
+
+          echo "Chart: $name"
+          echo "Version: $version"
+          echo "Description: $description"
+
+      - name: Check if release exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.chart_info.outputs.name }}-${{ steps.chart_info.outputs.version }}"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+          if gh release view "$tag" &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release $tag already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release $tag does not exist"
+          fi
+
+      - name: Skip if release exists
+        if: steps.check_release.outputs.exists == 'true' && inputs.skip_existing
+        run: |
+          echo "::notice::Release ${{ steps.check_release.outputs.tag }} already exists. Skipping."
+          echo "released=false" >> $GITHUB_OUTPUT
+
+      - name: Install Helm
+        if: steps.check_release.outputs.exists != 'true' || !inputs.skip_existing
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Login to OCI registry
+        if: steps.check_release.outputs.exists != 'true' || !inputs.skip_existing
+        run: |
+          registry="${{ inputs.oci_registry }}"
+          # Remove oci:// prefix if present
+          registry="${registry#oci://}"
+          # Extract host from registry URL
+          host="${registry%%/*}"
+
+          echo "${{ secrets.oci_password }}" | helm registry login "$host" \
+            --username ${{ github.actor }} \
+            --password-stdin
+
+      - name: Package chart
+        if: steps.check_release.outputs.exists != 'true' || !inputs.skip_existing
+        id: package
+        working-directory: ${{ inputs.chart_path }}
+        run: |
+          helm dependency update
+          helm package . --destination /tmp/helm-packages
+
+          package_file="/tmp/helm-packages/${{ steps.chart_info.outputs.name }}-${{ steps.chart_info.outputs.version }}.tgz"
+          echo "package_file=$package_file" >> $GITHUB_OUTPUT
+
+          echo "Packaged chart: $package_file"
+          ls -la /tmp/helm-packages/
+
+      - name: Push chart to OCI registry
+        if: steps.check_release.outputs.exists != 'true' || !inputs.skip_existing
+        run: |
+          registry="${{ inputs.oci_registry }}"
+          # Remove oci:// prefix if present
+          registry="${registry#oci://}"
+
+          helm push "${{ steps.package.outputs.package_file }}" "oci://${registry}"
+
+          echo "Pushed chart to oci://${registry}/${{ steps.chart_info.outputs.name }}:${{ steps.chart_info.outputs.version }}"
+
+      - name: Create GitHub release
+        if: steps.check_release.outputs.exists != 'true' || !inputs.skip_existing
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.check_release.outputs.tag }}"
+
+          # Determine latest flag
+          latest_flag=""
+          if [[ "${{ inputs.mark_as_latest }}" == "true" ]]; then
+            latest_flag="--latest"
+          fi
+
+          # Create release
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes "${{ steps.chart_info.outputs.description }}" \
+            $latest_flag
+
+          # Upload chart package to release
+          gh release upload "$tag" "${{ steps.package.outputs.package_file }}" --clobber
+
+          echo "released=true" >> $GITHUB_OUTPUT
+          echo "Created release: $tag"
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## Helm Chart Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Chart | ${{ steps.chart_info.outputs.name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ steps.chart_info.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | ${{ steps.check_release.outputs.tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Registry | ${{ inputs.oci_registry }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ steps.check_release.outputs.exists }}" == "true" && "${{ inputs.skip_existing }}" == "true" ]]; then
+            echo "| Status | Skipped (release exists) |" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ steps.release.outputs.released }}" == "true" ]]; then
+            echo "| Status | Released |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Status | Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
