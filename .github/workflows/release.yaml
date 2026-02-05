@@ -22,6 +22,19 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          ref: main
+
+      - name: Create Charts Dir
+        run: |
+          mkdir charts
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          ref: main
+          path: charts/comet-common
 
       - name: Configure Git
         run: |
