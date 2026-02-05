@@ -12,40 +12,11 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/helm-oci-release.yaml
     permissions:
-      contents: read
+      contents: write
       packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          ref: main
-
-      - name: Create Charts Dir
-        run: |
-          mkdir charts
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          ref: main
-          path: charts/comet-common
-
-      - name: Configure Git
-        run: |
-          git config --global user.name 'Github Actions (${{ github.actor }})'
-          git config --global user.email 'github-actions@comet.com'
-
-      - name: Run chart-releaser
-        uses: bitdeps/helm-oci-charts-releaser@v0.1.3
-        with:
-          oci_registry: ghcr.io/comet-ml
-          tag_name_pattern: ''
-          oci_username: github-actions
-          oci_password: ${{ secrets.GITHUB_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      oci_registry: ghcr.io/comet-ml
+    secrets:
+      oci_password: ${{ secrets.GITHUB_TOKEN }}
