@@ -1,8 +1,8 @@
 {{/*
 Component label
 
-{{ include "comet-common.labels.component" . -}}
-{{ include "comet-common.labels.component" (dict "componentName" .Values.componentName "context" $) -}}
+  {{ include "comet-common.labels.component" . -}}
+  {{ include "comet-common.labels.component" (dict "componentName" .Values.componentName "context" $) -}}
 */}}
 {{- define "comet-common.labels.component" -}}
   {{- if not (empty .componentName) -}}
@@ -15,7 +15,7 @@ app.kubernetes.io/component: {{ include "comet-common.names.name" (ternary .cont
 {{/*
 Kubernetes base labels
 
-{{ include "comet-common.labels.base" (dict "customLabels" .Values.commonLabels "context" $) -}}
+  {{ include "comet-common.labels.base" (dict "customLabels" .Values.commonLabels "context" $) -}}
 */}}
 {{- define "comet-common.labels.base" -}}
   {{- if and (hasKey . "customLabels") (hasKey . "context") -}}
@@ -38,9 +38,9 @@ app.kubernetes.io/version: {{ . | replace "+" "_" | quote }}
 {{/*
 Common labels
 
-{{ include "comet-common.labels" . -}}
+  {{ include "comet-common.labels" . -}}
 or
-{{ include "comet-common.labels" (dict "componentName" .Values.componentName "customLabels" .Values.commonLabels "context" $) -}}
+  {{ include "comet-common.labels" (dict "componentName" .Values.componentName "customLabels" .Values.commonLabels "context" $) -}}
 */}}
 {{- define "comet-common.labels" -}}
 {{ include "comet-common.labels.base" . }}
@@ -50,9 +50,9 @@ or
 {{/*
 Selector labels
 
-{{ include "comet-common.selectorLabels" . -}}
+  {{ include "comet-common.selectorLabels" . -}}
 or
-{{ include "comet-common.selectorLabels" (dict "componentName" .Values.componentName "customLabels" .Values.commonLabels "context" $) -}}
+  {{ include "comet-common.selectorLabels" (dict "componentName" .Values.componentName "customLabels" .Values.commonLabels "context" $) -}}
 */}}
 {{- define "comet-common.selectorLabels" -}}
   {{- if and (hasKey . "customLabels") (hasKey . "context") -}}

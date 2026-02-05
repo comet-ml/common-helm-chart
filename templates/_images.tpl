@@ -1,7 +1,7 @@
 {{/*
 Return the proper image name.
 If image tag and digest are not defined, termination fallbacks to chart appVersion.
-{{ include "comet-common.images.image" ( dict "imageRoot" .Values.path.to.the.image "global" .Values.global "chart" .Chart ) }}
+  {{ include "comet-common.images.image" ( dict "imageRoot" .Values.path.to.the.image "global" .Values.global "chart" .Chart ) }}
 */}}
 {{- define "comet-common.images.image" -}}
   {{- $registryName := default .imageRoot.registry ((.global).imageRegistry) -}}
@@ -27,7 +27,7 @@ If image tag and digest are not defined, termination fallbacks to chart appVersi
 
 {{/*
 Return the proper Docker Image Registry Secret Names (deprecated: use comet-common.images.renderPullSecrets instead)
-{{ include "comet-common.images.pullSecrets" ( dict "images" (list .Values.path.to.the.image1, .Values.path.to.the.image2) "global" .Values.global) }}
+  {{ include "comet-common.images.pullSecrets" ( dict "images" (list .Values.path.to.the.image1, .Values.path.to.the.image2) "global" .Values.global) }}
 */}}
 {{- define "comet-common.images.pullSecrets" -}}
   {{- $pullSecrets := list }}
@@ -60,7 +60,7 @@ imagePullSecrets:
 
 {{/*
 Return the proper Docker Image Registry Secret Names evaluating values as templates
-{{ include "comet-common.images.renderPullSecrets" ( dict "images" (list .Values.path.to.the.image1, .Values.path.to.the.image2) "context" $) }}
+  {{ include "comet-common.images.renderPullSecrets" ( dict "images" (list .Values.path.to.the.image1, .Values.path.to.the.image2) "context" $) }}
 */}}
 {{- define "comet-common.images.renderPullSecrets" -}}
   {{- $pullSecrets := list }}
@@ -94,7 +94,7 @@ imagePullSecrets:
 
 {{/*
 Return the proper image version (ingores image revision/prerelease info & fallbacks to chart appVersion)
-{{ include "comet-common.images.version" ( dict "imageRoot" .Values.path.to.the.image "chart" .Chart ) }}
+  {{ include "comet-common.images.version" ( dict "imageRoot" .Values.path.to.the.image "chart" .Chart ) }}
 */}}
 {{- define "comet-common.images.version" -}}
   {{- $imageTag := .imageRoot.tag | toString -}}
