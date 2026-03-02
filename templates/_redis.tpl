@@ -25,7 +25,42 @@ Usage: {{ include "comet-common.redis.value" (dict "root" . "key" "redisHost" "d
 {{- end -}}
 
 {{/*
-Generate Redis URL with flexible parameters.
+Build a Redis URL from an explicit config dict.
+This is the shared implementation used by both comet-common.redis.url and chart-specific Redis helpers.
+Usage: {{ include "comet-common.redis.buildUrl" (dict "host" "localhost" "port" "6379" "token" "NA" "user" "" "ssl" "false" "db" "0" "sslParams" false) }}
+*/}}
+{{- define "comet-common.redis.buildUrl" -}}
+  {{- $host := .host -}}
+  {{- $port := .port | toString -}}
+  {{- $token := .token | default "NA" | toString -}}
+  {{- $user := .user | default "" | toString -}}
+  {{- $ssl := .ssl | default "false" | toString -}}
+  {{- $db := .db | default "0" | toString -}}
+  {{- $sslParams := .sslParams | default false -}}
+  {{- $protocol := ternary "rediss" "redis" (eq $ssl "true") -}}
+  {{- if or (eq $token "NA") (eq $token "") -}}
+    {{- if $user -}}
+      {{- printf "%s://%s@%s:%s/%s" $protocol $user $host $port $db -}}
+    {{- else -}}
+      {{- printf "%s://%s:%s/%s" $protocol $host $port $db -}}
+    {{- end -}}
+  {{- else -}}
+    {{- $url := "" -}}
+    {{- if $user -}}
+      {{- $url = printf "%s://%s:%s@%s:%s/%s" $protocol $user $token $host $port $db -}}
+    {{- else -}}
+      {{- $url = printf "%s://:%s@%s:%s/%s" $protocol $token $host $port $db -}}
+    {{- end -}}
+    {{- if and (eq $ssl "true") $sslParams -}}
+      {{- printf "%s?ssl_cert_reqs=none" $url -}}
+    {{- else -}}
+      {{- $url -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Generate Redis URL from global.redis.* values.
 Supports both simple invocation (passing context directly) and dict-based parameters.
 Usage:
   {{ include "comet-common.redis.url" . }}                                      # db=0, no SSL params
@@ -41,29 +76,13 @@ Usage:
     {{- $db = .db | default "0" -}}
     {{- $sslParams = .sslParams | default false -}}
   {{- end -}}
-  {{- $redisHost := include "comet-common.redis.value" (dict "root" $root "key" "redisHost" "default" "comet-ml-redis-master") -}}
-  {{- $redisPort := include "comet-common.redis.value" (dict "root" $root "key" "redisPort" "default" "6379") -}}
-  {{- $redisToken := include "comet-common.redis.value" (dict "root" $root "key" "redisToken" "default" "NA") -}}
-  {{- $redisUser := include "comet-common.redis.value" (dict "root" $root "key" "redisUser") -}}
-  {{- $redisSSL := include "comet-common.redis.value" (dict "root" $root "key" "redisSSL" "default" "false") -}}
-  {{- $protocol := ternary "rediss" "redis" (eq $redisSSL "true") -}}
-  {{- if or (eq $redisToken "NA") (eq $redisToken "") -}}
-    {{- if $redisUser -}}
-      {{- printf "%s://%s@%s:%s/%s" $protocol $redisUser $redisHost $redisPort $db -}}
-    {{- else -}}
-      {{- printf "%s://%s:%s/%s" $protocol $redisHost $redisPort $db -}}
-    {{- end -}}
-  {{- else -}}
-    {{- $url := "" -}}
-    {{- if $redisUser -}}
-      {{- $url = printf "%s://%s:%s@%s:%s/%s" $protocol $redisUser $redisToken $redisHost $redisPort $db -}}
-    {{- else -}}
-      {{- $url = printf "%s://:%s@%s:%s/%s" $protocol $redisToken $redisHost $redisPort $db -}}
-    {{- end -}}
-    {{- if and (eq $redisSSL "true") $sslParams -}}
-      {{- printf "%s?ssl_cert_reqs=none" $url -}}
-    {{- else -}}
-      {{- $url -}}
-    {{- end -}}
-  {{- end -}}
+  {{- include "comet-common.redis.buildUrl" (dict
+    "host" (include "comet-common.redis.value" (dict "root" $root "key" "redisHost" "default" "comet-redis-master"))
+    "port" (include "comet-common.redis.value" (dict "root" $root "key" "redisPort" "default" "6379"))
+    "token" (include "comet-common.redis.value" (dict "root" $root "key" "redisToken" "default" "NA"))
+    "user" (include "comet-common.redis.value" (dict "root" $root "key" "redisUser"))
+    "ssl" (include "comet-common.redis.value" (dict "root" $root "key" "redisSSL" "default" "false"))
+    "db" $db
+    "sslParams" $sslParams
+  ) -}}
 {{- end }}
