@@ -139,13 +139,13 @@
 							"type": "string",
 							"description": "MySQL admin password (falls back to mysqlPassword)"
 						},
-						"mysqlUseSSL": {
+						"useTLS": {
 							"type": "boolean",
-							"description": "Enable SSL for MySQL connections"
+							"description": "Enable TLS for MySQL connections"
 						},
-						"requireSSL": {
+						"requireTLS": {
 							"type": "boolean",
-							"description": "Require SSL for MySQL connections"
+							"description": "Require TLS for MySQL connections"
 						},
 						"verifyServerCert": {
 							"type": "boolean",
@@ -234,9 +234,9 @@
 							"type": "string",
 							"description": "Redis username (for ACL-based auth)"
 						},
-						"redisSSL": {
+						"redisTLS": {
 							"type": ["boolean", "string"],
-							"description": "Enable SSL for Redis connections"
+							"description": "Enable TLS for Redis connections"
 						}
 					}
 				},

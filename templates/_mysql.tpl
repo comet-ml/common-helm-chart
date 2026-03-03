@@ -41,14 +41,14 @@ Usage:
   {{- default (include "comet-common.mysql.password" .) .Values.global.mysql.mysqlAdminPassword -}}
 {{- end -}}
 
-{{/* ---- SSL / Security ---- */}}
+{{/* ---- TLS / Security ---- */}}
 
-{{- define "comet-common.mysql.useSSL" -}}
-  {{- .Values.global.mysql.mysqlUseSSL | default false -}}
+{{- define "comet-common.mysql.useTLS" -}}
+  {{- .Values.global.mysql.useTLS | default false -}}
 {{- end -}}
 
-{{- define "comet-common.mysql.requireSSL" -}}
-  {{- .Values.global.mysql.requireSSL | default false -}}
+{{- define "comet-common.mysql.requireTLS" -}}
+  {{- .Values.global.mysql.requireTLS | default false -}}
 {{- end -}}
 
 {{- define "comet-common.mysql.verifyServerCert" -}}

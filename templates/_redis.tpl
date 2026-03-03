@@ -6,7 +6,7 @@ global value mechanism from the umbrella chart.
 Usage:
   {{ include "comet-common.redis.value" (dict "root" . "key" "redisHost" "default" "comet-ml-redis-master") }}
   {{ include "comet-common.redis.url" . }}
-  {{ include "comet-common.redis.url" (dict "root" . "db" "2" "sslParams" true) }}
+  {{ include "comet-common.redis.url" (dict "root" . "db" "2" "tlsParams" true) }}
 */}}
 
 {{/*
@@ -27,17 +27,17 @@ Usage: {{ include "comet-common.redis.value" (dict "root" . "key" "redisHost" "d
 {{/*
 Build a Redis URL from an explicit config dict.
 This is the shared implementation used by both comet-common.redis.url and chart-specific Redis helpers.
-Usage: {{ include "comet-common.redis.buildUrl" (dict "host" "localhost" "port" "6379" "token" "NA" "user" "" "ssl" "false" "db" "0" "sslParams" false) }}
+Usage: {{ include "comet-common.redis.buildUrl" (dict "host" "localhost" "port" "6379" "token" "NA" "user" "" "tls" "false" "db" "0" "tlsParams" false) }}
 */}}
 {{- define "comet-common.redis.buildUrl" -}}
   {{- $host := .host -}}
   {{- $port := .port | toString -}}
   {{- $token := .token | default "NA" | toString -}}
   {{- $user := .user | default "" | toString -}}
-  {{- $ssl := .ssl | default "false" | toString -}}
+  {{- $tls := .tls | default "false" | toString -}}
   {{- $db := .db | default "0" | toString -}}
-  {{- $sslParams := .sslParams | default false -}}
-  {{- $protocol := ternary "rediss" "redis" (eq $ssl "true") -}}
+  {{- $tlsParams := .tlsParams | default false -}}
+  {{- $protocol := ternary "rediss" "redis" (eq $tls "true") -}}
   {{- if or (eq $token "NA") (eq $token "") -}}
     {{- if $user -}}
       {{- printf "%s://%s@%s:%s/%s" $protocol $user $host $port $db -}}
@@ -51,7 +51,7 @@ Usage: {{ include "comet-common.redis.buildUrl" (dict "host" "localhost" "port" 
     {{- else -}}
       {{- $url = printf "%s://:%s@%s:%s/%s" $protocol $token $host $port $db -}}
     {{- end -}}
-    {{- if and (eq $ssl "true") $sslParams -}}
+    {{- if and (eq $tls "true") $tlsParams -}}
       {{- printf "%s?ssl_cert_reqs=none" $url -}}
     {{- else -}}
       {{- $url -}}
@@ -63,26 +63,26 @@ Usage: {{ include "comet-common.redis.buildUrl" (dict "host" "localhost" "port" 
 Generate Redis URL from global.redis.* values.
 Supports both simple invocation (passing context directly) and dict-based parameters.
 Usage:
-  {{ include "comet-common.redis.url" . }}                                      # db=0, no SSL params
+  {{ include "comet-common.redis.url" . }}                                      # db=0, no TLS params
   {{ include "comet-common.redis.url" (dict "root" . "db" "2") }}               # db=2
-  {{ include "comet-common.redis.url" (dict "root" . "db" "5" "sslParams" true) }}  # db=5 with SSL params
+  {{ include "comet-common.redis.url" (dict "root" . "db" "5" "tlsParams" true) }}  # db=5 with TLS params
 */}}
 {{- define "comet-common.redis.url" }}
   {{- $root := . -}}
   {{- $db := "0" -}}
-  {{- $sslParams := false -}}
+  {{- $tlsParams := false -}}
   {{- if kindIs "map" . -}}
     {{- $root = .root -}}
     {{- $db = .db | default "0" -}}
-    {{- $sslParams = .sslParams | default false -}}
+    {{- $tlsParams = .tlsParams | default false -}}
   {{- end -}}
   {{- include "comet-common.redis.buildUrl" (dict
     "host" (include "comet-common.redis.value" (dict "root" $root "key" "redisHost" "default" "comet-redis-master"))
     "port" (include "comet-common.redis.value" (dict "root" $root "key" "redisPort" "default" "6379"))
     "token" (include "comet-common.redis.value" (dict "root" $root "key" "redisToken" "default" "NA"))
     "user" (include "comet-common.redis.value" (dict "root" $root "key" "redisUser"))
-    "ssl" (include "comet-common.redis.value" (dict "root" $root "key" "redisSSL" "default" "false"))
+    "tls" (include "comet-common.redis.value" (dict "root" $root "key" "redisTLS" "default" "false"))
     "db" $db
-    "sslParams" $sslParams
+    "tlsParams" $tlsParams
   ) -}}
 {{- end }}
