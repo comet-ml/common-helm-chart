@@ -106,6 +106,169 @@
 							"type": "string"
 						}
 					}
+				},
+				"mysql": {
+					"type": "object",
+					"description": "MySQL connection configuration (used by comet-common.mysql.* helpers)",
+					"properties": {
+						"mysqlHost": {
+							"type": "string",
+							"description": "MySQL server hostname"
+						},
+						"mysqlPort": {
+							"type": "integer",
+							"description": "MySQL server port"
+						},
+						"mysqlDatabase": {
+							"type": "string",
+							"description": "MySQL database name"
+						},
+						"mysqlUser": {
+							"type": "string",
+							"description": "MySQL username"
+						},
+						"mysqlPassword": {
+							"type": "string",
+							"description": "MySQL password"
+						},
+						"mysqlAdminUser": {
+							"type": "string",
+							"description": "MySQL admin username (falls back to mysqlUser)"
+						},
+						"mysqlAdminPassword": {
+							"type": "string",
+							"description": "MySQL admin password (falls back to mysqlPassword)"
+						},
+						"useTLS": {
+							"type": "boolean",
+							"description": "Enable TLS for MySQL connections"
+						},
+						"requireTLS": {
+							"type": "boolean",
+							"description": "Require TLS for MySQL connections"
+						},
+						"verifyServerCert": {
+							"type": "boolean",
+							"description": "Verify MySQL server certificate"
+						},
+						"allowPublicKeyRetrieval": {
+							"type": "boolean",
+							"description": "Allow MySQL public key retrieval"
+						},
+						"awsRegion": {
+							"type": "string",
+							"description": "AWS region for IAM authentication"
+						},
+						"mysqlIamEnabled": {
+							"type": "boolean",
+							"description": "Enable IAM authentication for MySQL"
+						},
+						"mysqlIamServiceAccountEnabled": {
+							"type": "boolean",
+							"description": "Enable IAM service account authentication for MySQL"
+						},
+						"maxPoolSize": {
+							"type": "integer",
+							"minimum": 1,
+							"description": "Maximum MySQL connection pool size"
+						},
+						"replicated": {
+							"type": "object",
+							"description": "Replicated MySQL configuration (read-write / read-only)",
+							"properties": {
+								"enabled": {
+									"type": "boolean",
+									"description": "Enable replicated MySQL (separate rw/ro endpoints)"
+								},
+								"rw": {
+									"type": "object",
+									"description": "Read-write endpoint",
+									"properties": {
+										"host": { "type": "string" },
+										"user": { "type": "string" },
+										"password": { "type": "string" }
+									}
+								},
+								"ro": {
+									"type": "object",
+									"description": "Read-only endpoint",
+									"properties": {
+										"host": { "type": "string" },
+										"user": { "type": "string" },
+										"password": { "type": "string" }
+									}
+								}
+							}
+						},
+						"clientCertificate": {
+							"type": "object",
+							"description": "MySQL client certificate configuration",
+							"properties": {
+								"enabled": { "type": "boolean" },
+								"secretName": { "type": "string" }
+							}
+						}
+					}
+				},
+				"redis": {
+					"type": "object",
+					"description": "Redis connection configuration (used by comet-common.redis.* helpers)",
+					"properties": {
+						"redisHost": {
+							"type": "string",
+							"description": "Redis server hostname"
+						},
+						"redisPort": {
+							"type": "integer",
+							"description": "Redis server port"
+						},
+						"redisToken": {
+							"type": "string",
+							"description": "Redis authentication token/password"
+						},
+						"redisPassword": {
+							"type": "string",
+							"description": "Redis password (alternative to redisToken)"
+						},
+						"redisUser": {
+							"type": "string",
+							"description": "Redis username (for ACL-based auth)"
+						},
+						"redisTLS": {
+							"type": ["boolean", "string"],
+							"description": "Enable TLS for Redis connections"
+						}
+					}
+				},
+				"s3": {
+					"type": "object",
+					"description": "S3/Object storage configuration (used by comet-common.s3.* helpers)",
+					"properties": {
+						"keyID": {
+							"type": "string",
+							"description": "S3 access key ID"
+						},
+						"secretKey": {
+							"type": "string",
+							"description": "S3 secret access key"
+						},
+						"bucket": {
+							"type": "string",
+							"description": "S3 bucket name"
+						},
+						"region": {
+							"type": "string",
+							"description": "S3 region"
+						},
+						"url": {
+							"type": "string",
+							"description": "S3 endpoint URL (for MinIO or custom endpoints)"
+						},
+						"enableS3MetadataOnUpload": {
+							"type": ["boolean", "string"],
+							"description": "Enable S3 metadata on upload"
+						}
+					}
 				}
 			}
 		}

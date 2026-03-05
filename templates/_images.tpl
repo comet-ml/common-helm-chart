@@ -106,3 +106,12 @@ Return the proper image version (ingores image revision/prerelease info & fallba
     {{- print .chart.AppVersion -}}
   {{- end -}}
 {{- end -}}
+
+{{/*
+Return the proper image pull policy.
+Resolves: imageRoot.pullPolicy -> default "IfNotPresent"
+  {{ include "comet-common.images.pullPolicy" (dict "imageRoot" .Values.path.to.the.image) }}
+*/}}
+{{- define "comet-common.images.pullPolicy" -}}
+  {{- .imageRoot.pullPolicy | default "IfNotPresent" -}}
+{{- end -}}
