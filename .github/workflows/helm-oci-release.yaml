@@ -22,6 +22,11 @@ on:
         required: false
         type: boolean
         default: true
+      ref:
+        description: 'Git ref to checkout (default: the commit that triggered the workflow). Pass a branch when an earlier job pushed new commits (e.g. a version bump) that must be packaged.'
+        required: false
+        type: string
+        default: ''
     secrets:
       oci_password:
         description: 'Password for OCI registry authentication'
@@ -46,7 +51,11 @@ jobs:
       released: ${{ steps.release.outputs.released }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          # Empty ref => default (the triggering commit). Callers that bumped the
+          # version in an earlier job pass a branch so we package the new commit.
+          ref: ${{ inputs.ref }}
 
       - name: Extract chart info
         id: chart_info
