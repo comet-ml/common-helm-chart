@@ -189,6 +189,101 @@ Safely render nested structures:
 {{- include "comet-common.tplvalues.saferender" (dict "value" .Values.image "context" $) | nindent 2 }}
 ```
 
+### Imported Bitnami Common Helpers
+
+These helpers are ported from the (now unmaintained) Bitnami `common` library chart, renamed under
+the `comet-common.*` namespace and adapted for this chart. They live in
+[`templates/_imported_bitnami_common.tpl`](templates/_imported_bitnami_common.tpl). Helpers this chart
+already provides (names, labels, images, tplvalues, affinities, size presets) were not re-imported.
+
+#### Capabilities
+
+Resolve the correct `apiVersion` / Kubernetes version for the target cluster.
+
+| Helper | Description |
+|--------|-------------|
+| `comet-common.capabilities.kubeVersion` | Returns the target Kubernetes version. |
+| `comet-common.capabilities.apiVersions.has` | Returns `true` if a given apiVersion is available. |
+| `comet-common.capabilities.<kind>.apiVersion` | Returns the apiVersion for `policy`, `networkPolicy`, `job`, `cronjob`, `daemonset`, `deployment`, `statefulset`, `ingress`, `rbac`, `crd`, `apiService`, `hpa`, `vpa`. |
+| `comet-common.capabilities.psp.supported` | Returns `true` when PodSecurityPolicy is supported (K8s < 1.25). |
+| `comet-common.capabilities.admissionConfiguration.supported` / `.apiVersion` | AdmissionConfiguration support + version. |
+| `comet-common.capabilities.podSecurityConfiguration.apiVersion` | PodSecurityConfiguration apiVersion. |
+| `comet-common.capabilities.supportsHelmVersion` | Returns `true` if Helm is 3.3+. |
+
+```yaml
+apiVersion: {{ include "comet-common.capabilities.deployment.apiVersion" . }}
+kind: Deployment
+{{- if include "comet-common.capabilities.apiVersions.has" (dict "version" "batch/v1" "context" $) }}
+# batch/v1 is available
+{{- end }}
+```
+
+#### Names
+
+| Helper | Description |
+|--------|-------------|
+| `comet-common.names.namespace` | Returns the release namespace, honoring `namespaceOverride`. |
+
+#### Storage
+
+| Helper | Description |
+|--------|-------------|
+| `comet-common.storage.class` | Resolves the storage class (global → persistence → global default), emitting the `storageClassName:` line. `"-"` yields an empty class name. |
+
+```yaml
+{{- include "comet-common.storage.class" (dict "persistence" .Values.persistence "global" .Values.global) | nindent 2 }}
+```
+
+#### Ingress
+
+| Helper | Description |
+|--------|-------------|
+| `comet-common.ingress.backend` | Renders an Ingress backend block, choosing `port.name` vs `port.number` based on the value type. |
+| `comet-common.ingress.certManagerRequest` | Returns `true` if cert-manager annotations are present. |
+
+```yaml
+backend:
+  {{- include "comet-common.ingress.backend" (dict "serviceName" "my-svc" "servicePort" "http" "context" $) | nindent 2 }}
+```
+
+#### Utils
+
+| Helper | Description |
+|--------|-------------|
+| `comet-common.utils.fieldToEnvVar` | Converts a field name to an env var name (`my-password` → `MY_PASSWORD`). |
+| `comet-common.utils.getValueFromKey` | Reads a dot-path value out of `.Values`. |
+| `comet-common.utils.getKeyFromList` | Returns the first key in a list that resolves to a defined value. |
+| `comet-common.utils.secret.getvalue` | Prints a `kubectl get secret` one-liner to fetch and decode a secret value. |
+| `comet-common.utils.checksumTemplate` | sha256sum of a rendered single-resource template (minus metadata) for pod annotations. |
+
+#### Secrets
+
+> Helpers using `lookup` (`secrets.passwords.manage`, `secrets.lookup`, `secrets.exists`) only see
+> existing cluster state during `helm install`/`upgrade`, not `helm template`.
+
+| Helper | Description |
+|--------|-------------|
+| `comet-common.secrets.name` | Resolves a secret name, honoring an `existingSecret` (string or object) and optional suffix. |
+| `comet-common.secrets.key` | Resolves a secret key, applying `existingSecret.keyMapping` when present. |
+| `comet-common.secrets.passwords.manage` | Returns an existing, provided, or freshly generated password (see ordering in the helper docstring). Fails a `helm upgrade` if a required password is empty. |
+| `comet-common.secrets.lookup` | Reuses an existing secret value, else base64-encodes a default. |
+| `comet-common.secrets.exists` | Returns `true` if the named secret already exists. |
+
+#### Compatibility
+
+| Helper | Description |
+|--------|-------------|
+| `comet-common.compatibility.isOpenshift` | Returns `true` when running on OpenShift. |
+| `comet-common.compatibility.renderSecurityContext` | Renders a securityContext, stripping fields incompatible with OpenShift's restricted SCC when configured via `global.compatibility.openshift`. |
+
+```yaml
+securityContext:
+  {{- include "comet-common.compatibility.renderSecurityContext" (dict "secContext" .Values.containerSecurityContext "context" $) | nindent 2 }}
+```
+
 ## License
 
 Copyright Comet ML, Inc.
+
+Portions of [`templates/_imported_bitnami_common.tpl`](templates/_imported_bitnami_common.tpl) are
+adapted from the Bitnami `common` chart, Copyright Broadcom, Inc., licensed under Apache-2.0.

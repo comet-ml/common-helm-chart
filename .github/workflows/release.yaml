@@ -1,22 +1,75 @@
 name: Release Chart
+run-name: "Release Chart (${{ inputs.bump }} bump) by @${{ github.actor }}"
 
+# Manual release. Bumping the chart version + committing it back is done here in
+# CI (the monitoring repo's pattern) so we no longer manage Chart.yaml versions by
+# hand. This is workflow_dispatch (not push-triggered) on purpose: a push-triggered
+# job that commits a version bump back to main would re-trigger itself in a loop.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - Chart.yaml
-      - templates/**
-      - values.yaml
-      - values.schema.json
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump (SemVer)"
+        type: choice
+        required: true
+        default: minor
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.chart-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Bump chart version
+        shell: bash
+        run: |
+          set -ex
+          CURRENT_VERSION=$(yq '.version' Chart.yaml)
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+          # Bump per SemVer, resetting lower segments on minor/major.
+          case "${{ inputs.bump }}" in
+            major) NEW_VERSION="$((MAJOR + 1)).0.0" ;;
+            minor) NEW_VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
+            *)     NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+          esac
+          sed -i "s/^version: .*/version: ${NEW_VERSION}/" Chart.yaml
+          git config user.name "github-actions"
+          git config user.email "github-actions@comet.com"
+          git add Chart.yaml
+          git commit -m "Bump chart version to ${NEW_VERSION}"
+          git push --no-verify origin HEAD
+
+      - name: Get chart version
+        id: chart-version
+        shell: bash
+        run: |
+          set -ex
+          yq '"version=" + .version' Chart.yaml >> "$GITHUB_OUTPUT"
+
   release:
+    needs: bump
     uses: ./.github/workflows/helm-oci-release.yaml
     permissions:
       contents: write
       packages: write
     with:
       oci_registry: ghcr.io/comet-ml
+      # Package the branch HEAD, which now includes the bump commit from the
+      # 'bump' job (a plain checkout would package the pre-bump triggering SHA).
+      ref: ${{ github.ref_name }}
     secrets:
       oci_password: ${{ secrets.GITHUB_TOKEN }}
