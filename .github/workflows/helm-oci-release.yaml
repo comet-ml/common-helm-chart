@@ -42,16 +42,23 @@ on:
         description: 'Whether a release was created'
         value: ${{ jobs.release.outputs.released }}
 
+permissions:
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    # The caller must grant both: gh release create/upload, and helm push to GHCR.
+    permissions:
+      contents: write
+      packages: write
     outputs:
       chart_name: ${{ steps.chart_info.outputs.name }}
       chart_version: ${{ steps.chart_info.outputs.version }}
       released: ${{ steps.release.outputs.released }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # Empty ref => default (the triggering commit). Callers that bumped the
           # version in an earlier job pass a branch so we package the new commit.
@@ -102,7 +109,7 @@ jobs:
 
       - name: Install Helm
         if: steps.check_release.outputs.exists != 'true' || !inputs.skip_existing
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5
         with:
           version: 'v3.14.0'
 
